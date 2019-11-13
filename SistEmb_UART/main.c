@@ -28,7 +28,7 @@ UART_INIT(void){
     UART2_CTL_R = UART_CTL_RXE |                                            // Habilitar RXE, TXE Y UART
                   UART_CTL_TXE |
                   UART_CTL_UARTEN;
-    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0X00FFFF00)+0X11000011;  // UART 0 y 2
+    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0X00FFFF00)+0X11000011;  // UART 0 y 2 (UART0{PA0, PA1} UART2{PA6,PA7})
     GPIO_PORTA_AHB_AMSEL_R &= ~(0X00C3);                                    // Deshabilitar función analógica en PA0-1 y PA6-7
     GPIO_PORTA_AHB_AFSEL_R |= 0X00C3;                                       // Habilitar función alterna en PA0-1 y PA6-7
     GPIO_PORTA_AHB_DEN_R |= 0X00C3;                                         // Habilitar función I/O Digital en PA0-1 y PA6-7
