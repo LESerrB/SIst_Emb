@@ -28,10 +28,10 @@ UART_INIT(void){
     UART2_CTL_R = UART_CTL_RXE |                                            // Habilitar RXE, TXE Y UART
                   UART_CTL_TXE |
                   UART_CTL_UARTEN;
-    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0X00FFFF00)+0X11000011;  // UART 0 y 3
-    GPIO_PORTA_AHB_AMSEL_R &= ~(0X00C3);                                    // Deshabilitar función analógica en PA0-1
-    GPIO_PORTA_AHB_AFSEL_R |= 0X00C3;                                       // Habilitar función alterna en PA0-1
-    GPIO_PORTA_AHB_DEN_R |= 0X00C3;                                         // Habilitar función I/O Digital
+    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0X00FFFF00)+0X11000011;  // UART 0 y 2
+    GPIO_PORTA_AHB_AMSEL_R &= ~(0X00C3);                                    // Deshabilitar función analógica en PA0-1 y PA6-7
+    GPIO_PORTA_AHB_AFSEL_R |= 0X00C3;                                       // Habilitar función alterna en PA0-1 y PA6-7
+    GPIO_PORTA_AHB_DEN_R |= 0X00C3;                                         // Habilitar función I/O Digital en PA0-1 y PA6-7
 }
 
 // Recive información desde la terminal
@@ -52,14 +52,14 @@ void UART0_Escribe_dato(char dato){
 }
 // Transmite al modem
 // Tx -> SIM800L
-void UART2_Transmit(char dato){
+void UART_Transmit(char dato){
     while((UART2_FR_R & 0X0020) != 0);
 
     UART2_DR_R = dato;
 }
 // Recive del modem
 // SIM800L -> Rx
-char UART2_Recive(void){
+char UART_Recive(void){
     while((UART2_FR_R & 0X0010) != 0);
 
     return((char)(UART2_DR_R & 0xff));
@@ -82,11 +82,9 @@ int main(void){
     UART0_Escribe_dato(0x0d);
     UART0_Escribe_dato(0x0a);
 
-    //UART3_Transmit('A');
-
     while(1){
-        //UART0_Escribe_dato(UART0_Lee_dato());
-        UART2_Transmit('A');
-
+        UART_Transmit('A');
+        UART_Transmit('T');
+        UART0_Escribe_dato(UART_Recive());
     }
 }
