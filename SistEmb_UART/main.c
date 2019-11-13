@@ -7,33 +7,62 @@
 uint8_t d_uint8Dato;
 uint32_t uint32Retardo;
 
-UART_INI(void){
-    SYSCTL_RCGCUART_R |= 0X0001;                                            // Habilitar UART0
-    SYSCTL_RCGCGPIO_R |= 0X0001;                                            // Habilitar Puerto A
-    uint32Retardo = SYSCTL_RCGCGPIO_R;                                      // Retardo para habilitar perif閞icos
-    UART0_CTL_R &= ~0X0001;                                                 // Deshabilitar UART
+UART_INIT(void){
+    SYSCTL_RCGCUART_R |= SYSCTL_RCGCUART_R0 |                               // Habilitar UART0
+                         SYSCTL_RCGCUART_R2;                                // Habilitar UART2
+    SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R0;                                // Habilitar Puerto A
+    uint32Retardo = SYSCTL_RCGCGPIO_R;                                      // Retardo para habilitar perif茅ricos
+    /* UART 0 Configurations */
+    UART0_CTL_R &= UART_CTL_UARTEN;                                         // Deshabilitar UART
     UART0_IBRD_R = 27;                                                      // IBDR = int(50000000/16*115200)) = int(27.1267)
     UART0_FBRD_R = 8;                                                       // FBRD = round(0.1267*64 =8)
-    UART0_LCRH_R = 0X0060;                                                  // 8-BITS, Habilitar FIFO
-    UART0_CTL_R = 0X0301;                                                   // Habilitar RXE, TXE Y UART
-    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0XFFFFFF00)+0X00000011;  // UART
-    GPIO_PORTA_AHB_AMSEL_R &= ~0X03;                                        // Deshabilitar funci髇 anal骻ica en PA0-1
-    GPIO_PORTA_AHB_AFSEL_R |= 0X03;                                         // Habilitar funci髇 alterna en PA0-1
-    GPIO_PORTA_AHB_DEN_R |= 0X03;                                           // Habilitar funci髇 I/O Digital
+    UART0_LCRH_R = UART_LCRH_WLEN_8;                                        // 8-BITS, Habilitar FIFO
+    UART0_CTL_R = UART_CTL_RXE |                                            // Habilitar RXE, TXE Y UART
+                  UART_CTL_TXE |
+                  UART_CTL_UARTEN;
+    /* UART 2 Configurations */
+    UART2_CTL_R &= UART_CTL_UARTEN;                                         // Deshabilitar UART
+    UART2_IBRD_R = 27;                                                      // IBDR = int(50000000/16*115200)) = int(27.1267)
+    UART2_FBRD_R = 8;                                                       // FBRD = round(0.1267*64 =8)
+    UART2_LCRH_R = UART_LCRH_WLEN_8;                                        // 8-BITS, Habilitar FIFO
+    UART2_CTL_R = UART_CTL_RXE |                                            // Habilitar RXE, TXE Y UART
+                  UART_CTL_TXE |
+                  UART_CTL_UARTEN;
+    GPIO_PORTA_AHB_PCTL_R = (GPIO_PORTA_AHB_PCTL_R&0X00FFFF00)+0X11000011;  // UART 0 y 3
+    GPIO_PORTA_AHB_AMSEL_R &= ~(0X00C3);                                    // Deshabilitar funci贸n anal贸gica en PA0-1
+    GPIO_PORTA_AHB_AFSEL_R |= 0X00C3;                                       // Habilitar funci贸n alterna en PA0-1
+    GPIO_PORTA_AHB_DEN_R |= 0X00C3;                                         // Habilitar funci贸n I/O Digital
 }
 
-// Esperar hasta que se reciba un dato
-char UART_Lee_dato(void){
-    while((UART0_FR_R&0X0010) != 0);                                        // Esperar a que RXFE sea 0
+// Recive informaci贸n desde la terminal
+// CMD -> Rx
+char UART0_Lee_dato(void){
+    while((UART0_FR_R & 0X0010) != 0);                                      // Esperar a que RXFE sea 0
 
     d_uint8Dato = ((char)(UART0_DR_R&0xff));
-    //return((char)(UART0_DR_R&0xff));
+    return((char)(UART0_DR_R & 0xff));
 }
 
-char UART0_Escribe_dato(char dato){
-    while((UART0_FR_R&0X0020) != 0);                                        // Esperar a que TXFF sea 0
+// Env铆a informacion de la tarjeta a la terminal
+// Tx -> CMD
+void UART0_Escribe_dato(char dato){
+    while((UART0_FR_R & 0X0020) != 0);                                      // Esperar a que TXFF sea 0
 
     UART0_DR_R = dato;
+}
+// Transmite al modem
+// Tx -> SIM800L
+void UART2_Transmit(char dato){
+    while((UART2_FR_R & 0X0020) != 0);
+
+    UART2_DR_R = dato;
+}
+// Recive del modem
+// SIM800L -> Rx
+char UART2_Recive(void){
+    while((UART2_FR_R & 0X0010) != 0);
+
+    return((char)(UART2_DR_R & 0xff));
 }
 
 int main(void){
@@ -43,14 +72,21 @@ int main(void){
                                              SYSCTL_USE_PLL |
                                              SYSCTL_CFG_VCO_480), 50000000);
 
-    UART_INI();
-    UART0_Escribe_dato('A');
-    UART0_Escribe_dato('T');
+    UART_INIT();
+    UART0_Escribe_dato('S');
+    UART0_Escribe_dato('y');
+    UART0_Escribe_dato('s');
+    UART0_Escribe_dato('R');
+    UART0_Escribe_dato('d');
+    UART0_Escribe_dato('y');
     UART0_Escribe_dato(0x0d);
     UART0_Escribe_dato(0x0a);
 
+    //UART3_Transmit('A');
+
     while(1){
-        UART_Lee_dato();
-        UART0_Escribe_dato(d_uint8Dato);
+        //UART0_Escribe_dato(UART0_Lee_dato());
+        UART2_Transmit('A');
+
     }
 }
