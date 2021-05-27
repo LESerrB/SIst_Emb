@@ -1,4 +1,4 @@
-# Sist_Emb
+# Sististemas Embebidos
 Repositorio de prácticas de la materia de Sistemas Embebidos FI UNAM
 
  - Hola mundo, parte de la prueba inicial de la tarjeta TIVA TM4C1294XL con un parpadeo de leds de acuerdo al presionado de los botones de la tarjeta
